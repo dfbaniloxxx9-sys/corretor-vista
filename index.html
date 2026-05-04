@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Corretor Vista Imagens</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #111118;
+    --border: #1e1e2e;
+    --accent: #e8ff47;
+    --accent2: #47d4ff;
+    --red: #ff4757;
+    --green: #2ecc71;
+    --text: #e8e8f0;
+    --muted: #6b6b80;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Syne', sans-serif;
+    min-height: 100vh;
+  }
+  /* GRID BG */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(232,255,71,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,255,71,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 32px 24px; }
+
+  /* HEADER */
+  header { display: flex; align-items: center; gap: 16px; margin-bottom: 40px; }
+  .logo-badge {
+    width: 48px; height: 48px;
+    background: var(--accent);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px;
+  }
+  header h1 { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; }
+  header p { font-size: 12px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 2px; }
+  .status-pill {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 14px;
+    font-size: 12px;
+    font-family: 'DM Mono', monospace;
+  }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .dot.connected { background: var(--green); box-shadow: 0 0 6px var(--green); }
+
+  /* CREDENTIALS CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin-bottom: 20px;
+  }
+  .card-title {
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 16px;
+  }
+  .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .field label {
+    display: block;
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 6px;
+  }
+  .field input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .field input:focus { border-color: var(--accent); }
+  .btn-connect {
+    margin-top: 16px;
+    width: 100%;
+    padding: 12px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s, transform 0.1s;
+  }
+  .btn-connect:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-connect:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; margin-bottom: 20px; }
+  .tab {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    background: transparent;
+    color: var(--muted);
+    transition: all 0.2s;
+  }
+  .tab.active {
+    background: var(--surface);
+    border-color: var(--border);
+    color: var(--accent);
+  }
+
+  /* REVIEWS LIST */
+  .reviews-grid { display: flex; flex-direction: column; gap: 10px; }
+  .review-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    cursor: pointer;
+    transition: border-color 0.2s;
+  }
+  .review-item:hover { border-color: var(--accent2); }
+  .review-item.selected { border-color: var(--accent); }
+  .review-thumb {
+    width: 48px; height: 48px;
+    background: var(--border);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .review-thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .review-info { flex: 1; min-width: 0; }
+  .review-name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .review-meta { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-top: 3px; }
+  .review-badge {
+    padding: 4px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    flex-shrink: 0;
+  }
+  .badge-pending { background: rgba(232,255,71,0.1); color: var(--accent); border: 1px solid rgba(232,255,71,0.2); }
+  .badge-approved { background: rgba(46,204,113,0.1); color: var(--green); border: 1px solid rgba(46,204,113,0.2); }
+  .badge-rejected { background: rgba(255,71,87,0.1); color: var(--red); border: 1px solid rgba(255,71,87,0.2); }
+
+  /* NOTES PANEL */
+  .notes-panel { display: none; }
+  .notes-panel.visible { display: block; }
+  .note-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 10px;
+  }
+  .note-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .note-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #000;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .note-user { font-size: 12px; font-weight: 600; }
+  .note-time { font-size: 11px; color: var(--muted); font-family: 'DM Mono', monospace; margin-left: auto; }
+  .note-text { font-size: 13px; color: var(--text); line-height: 1.5; }
+  .note-file { font-size: 11px; color: var(--accent2); font-family: 'DM Mono', monospace; margin-top: 6px; }
+
+  /* ANALYZE BTN */
+  .btn-analyze {
+    width: 100%;
+    padding: 14px;
+    background: transparent;
+    color: var(--accent2);
+    border: 1px solid var(--accent2);
+    border-radius: 8px;
+    font-family: 'Syne', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-bottom: 16px;
+  }
+  .btn-analyze:hover { background: rgba(71,212,255,0.08); }
+
+  /* ANALYSIS RESULT */
+  .analysis-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 16px;
+    display: none;
+  }
+  .analysis-box.visible { display: block; }
+  .analysis-title { font-size: 12px; font-family: 'DM Mono', monospace; color: var(--muted); margin-bottom: 12px; text-transform: uppercase; letter-spacing: 1px; }
+  .check-item { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 10px; font-size: 13px; line-height: 1.4; }
+  .check-icon { flex-shrink: 0; margin-top: 1px; }
+
+  /* EMPTY / LOADING */
+  .empty { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 14px; }
+  .empty .icon { font-size: 40px; margin-bottom: 12px; }
+  .loader {
+    display: inline-block;
+    width: 16px; height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; }
+  .section-title { font-size: 13px; font-weight: 700; color: var(--text); }
+  .section-count { font-size: 11px; font-family: 'DM Mono', monospace; color: var(--muted); }
+
+  /* BACK BTN */
+  .btn-back {
+    background: none;
+    border: none;
+    color: var(--muted);
+    cursor: pointer;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    display: flex; align-items: center; gap: 6px;
+    margin-bottom: 16px;
+    padding: 0;
+  }
+  .btn-back:hover { color: var(--text); }
+
+  .error-msg { color: var(--red); font-size: 12px; font-family: 'DM Mono', monospace; margin-top: 8px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="logo-badge">🎯</div>
+    <div>
+      <h1>Corretor Vista Imagens</h1>
+      <p>reviewstudio · agente de conferência</p>
+    </div>
+    <div class="status-pill">
+      <div class="dot" id="statusDot"></div>
+      <span id="statusText">desconectado</span>
+    </div>
+  </header>
+
+  <!-- CREDENTIALS -->
+  <div class="card" id="credCard">
+    <div class="card-title">// credenciais ReviewStudio</div>
+    <div class="fields">
+      <div class="field">
+        <label>EMAIL ADMIN</label>
+        <input type="email" id="emailInput" placeholder="seu@email.com"/>
+      </div>
+      <div class="field">
+        <label>API KEY</label>
+        <input type="password" id="tokenInput" placeholder="••••••••••••••••"/>
+      </div>
+    </div>
+    <button class="btn-connect" id="btnConnect" onclick="connect()">Conectar ao ReviewStudio</button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="mainContent" style="display:none">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab('reviews', this)">📋 Reviews</button>
+      <button class="tab" onclick="showTab('notes', this)">💬 Apontamentos</button>
+    </div>
+
+    <!-- REVIEWS TAB -->
+    <div id="tab-reviews">
+      <div class="section-header">
+        <span class="section-title">Reviews ativas</span>
+        <span class="section-count" id="reviewCount">—</span>
+      </div>
+      <div class="reviews-grid" id="reviewsList">
+        <div class="empty"><div class="icon">📂</div>Carregando reviews...</div>
+      </div>
+    </div>
+
+    <!-- NOTES TAB -->
+    <div id="tab-notes" style="display:none">
+      <div id="notesContent">
+        <div class="empty"><div class="icon">💬</div>Selecione uma review na aba Reviews para ver os apontamentos.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let API_EMAIL = '';
+  let API_TOKEN = '';
+  let BASE_URL = 'https://vistacg.reviewstudio.com/api';
+  let selectedReview = null;
+  let allReviews = [];
+
+  function headers() {
+    return {
+      'X-REVIEWSTUDIO-EMAIL': API_EMAIL,
+      'X-REVIEWSTUDIO-TOKEN': API_TOKEN,
+      'Content-Type': 'application/json'
+    };
+  }
+
+  async function connect() {
+    const email = document.getElementById('emailInput').value.trim();
+    const token = document.getElementById('tokenInput').value.trim();
+    const btn = document.getElementById('btnConnect');
+    const err = document.getElementById('errorMsg');
+
+    if (!email || !token) { err.textContent = 'Preencha e-mail e API Key.'; return; }
+
+    API_EMAIL = email;
+    API_TOKEN = token;
+    err.textContent = '';
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loader"></span>Conectando...';
+
+    try {
+      const res = await fetch(`${BASE_URL}/reviews`, { headers: headers() });
+      if (!res.ok) throw new Error('Credenciais inválidas');
+      const data = await res.json();
+      allReviews = data;
+
+      document.getElementById('statusDot').classList.add('connected');
+      document.getElementById('statusText').textContent = 'conectado';
+      document.getElementById('credCard').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+
+      renderReviews(data);
+    } catch(e) {
+      err.textContent = '⚠ ' + e.message;
+      btn.disabled = false;
+      btn.textContent = 'Conectar ao ReviewStudio';
+      API_EMAIL = ''; API_TOKEN = '';
+    }
+  }
+
+  function renderReviews(reviews) {
+    const list = document.getElementById('reviewsList');
+    document.getElementById('reviewCount').textContent = `${reviews.length} review(s)`;
+
+    if (!reviews.length) {
+      list.innerHTML = '<div class="empty"><div class="icon">📂</div>Nenhuma review encontrada.</div>';
+      return;
+    }
+
+    list.innerHTML = reviews.map(r => {
+      const approval = r.approval || 'pending';
+      const badgeClass = approval === 'approved' ? 'badge-approved' : approval === 'rejected' ? 'badge-rejected' : 'badge-pending';
+      const badgeLabel = approval === 'approved' ? '✅ aprovado' : approval === 'rejected' ? '❌ rejeitado' : '⏳ pendente';
+      const thumb = r.featured_file_thumbnail
+        ? `<img src="${r.featured_file_thumbnail}" alt="thumb"/>`
+        : '🖼';
+      const files = r.file_count || 0;
+      const comments = r.comments_count || 0;
+      return `
+        <div class="review-item" onclick="selectReview(${r.id}, '${(r.description||'Review').replace(/'/g,"\\'")}')">
+          <div class="review-thumb">${thumb}</div>
+          <div class="review-info">
+            <div class="review-name">${r.description || 'Sem título'}</div>
+            <div class="review-meta">${files} arquivo(s) · ${comments} comentário(s)</div>
+          </div>
+          <span class="review-badge ${badgeClass}">${badgeLabel}</span>
+        </div>`;
+    }).join('');
+  }
+
+  async function selectReview(id, name) {
+    selectedReview = { id, name };
+    document.querySelectorAll('.review-item').forEach(el => el.classList.remove('selected'));
+    event.currentTarget.classList.add('selected');
+    showTab('notes', document.querySelectorAll('.tab')[1]);
+    await loadNotes(id, name);
+  }
+
+  async function loadNotes(reviewId, reviewName) {
+    const content = document.getElementById('notesContent');
+    content.innerHTML = '<div class="empty"><span class="loader"></span>Carregando apontamentos...</div>';
+
+    try {
+      const res = await fetch(`${BASE_URL}/reviews/${reviewId}/notes`, { headers: headers() });
+      const notes = await res.json();
+
+      if (!notes.length) {
+        content.innerHTML = '<div class="empty"><div class="icon">💬</div>Nenhum apontamento encontrado nesta review.</div>';
+        return;
+      }
+
+      content.innerHTML = `
+        <button class="btn-back" onclick="showTab('reviews', document.querySelectorAll('.tab')[0])">← voltar</button>
+        <div class="section-header">
+          <span class="section-title">${reviewName}</span>
+          <span class="section-count">${notes.length} apontamento(s)</span>
+        </div>
+        <button class="btn-analyze" onclick="analyzeNotes(${reviewId})">🤖 Analisar com IA se foram atendidos</button>
+        <div class="analysis-box" id="analysisBox">
+          <div class="analysis-title">// resultado da análise</div>
+          <div id="analysisContent"></div>
+        </div>
+        ${notes.map(n => {
+          const initials = (n.user?.name || 'U').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+          const date = n.created_at ? new Date(n.created_at).toLocaleDateString('pt-BR') : '';
+          return `
+          <div class="note-item">
+            <div class="note-header">
+              <div class="note-avatar">${initials}</div>
+              <div class="note-user">${n.user?.name || 'Usuário'}</div>
+              <div class="note-time">${date}</div>
+            </div>
+            <div class="note-text">${n.plain_text || n.html || '(sem texto)'}</div>
+            ${n.file ? `<div class="note-file">📄 ${n.file.original_name}</div>` : ''}
+          </div>`;
+        }).join('')}
+      `;
+    } catch(e) {
+      content.innerHTML = `<div class="empty"><div class="icon">⚠</div>${e.message}</div>`;
+    }
+  }
+
+  async function analyzeNotes(reviewId) {
+    const box = document.getElementById('analysisBox');
+    const content = document.getElementById('analysisContent');
+    box.classList.add('visible');
+    content.innerHTML = '<span class="loader"></span>Analisando apontamentos com IA...';
+
+    // Pega os notes já carregados
+    try {
+      const res = await fetch(`${BASE_URL}/reviews/${reviewId}/notes`, { headers: headers() });
+      const notes = await res.json();
+      const filesRes = await fetch(`${BASE_URL}/reviews/${reviewId}/files`, { headers: headers() });
+      const files = await filesRes.json();
+
+      const notesList = notes.map((n,i) => `${i+1}. [${n.file?.original_name||'geral'}] ${n.plain_text||''}`).join('\n');
+      const filesList = files.map(f => `- ${f.original_name} (v${f.version_number}, aprovação: ${f.approval||'pendente'})`).join('\n');
+
+      const prompt = `Você é um assistente de controle de qualidade de uma agência de imagens chamada Vista Imagens.
+
+Analise os apontamentos abaixo feitos pelo cliente em uma review, e os arquivos disponíveis na versão atual.
+
+APONTAMENTOS DO CLIENTE:
+${notesList}
+
+ARQUIVOS NA REVIEW (versão atual):
+${filesList}
+
+Com base nisso, informe:
+1. Quais apontamentos provavelmente foram atendidos (arquivos têm versão mais nova ou aprovação)
+2. Quais apontamentos ainda podem estar pendentes
+3. Uma recomendação geral
+
+Responda de forma objetiva, em português, com bullet points.`;
+
+      const apiRes = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      const data = await apiRes.json();
+      const text = data.content?.[0]?.text || 'Não foi possível analisar.';
+
+      content.innerHTML = text
+        .split('\n')
+        .filter(l => l.trim())
+        .map(l => {
+          if (l.startsWith('1.') || l.startsWith('2.') || l.startsWith('3.')) {
+            return `<div style="font-weight:700;color:var(--accent2);margin:12px 0 6px;font-size:13px;">${l}</div>`;
+          }
+          const icon = l.includes('✅') || l.toLowerCase().includes('atendid') ? '✅' :
+                       l.includes('❌') || l.toLowerCase().includes('pendente') ? '❌' : '•';
+          return `<div class="check-item"><span class="check-icon">${icon}</span><span>${l.replace(/^[-•*]\s*/,'')}</span></div>`;
+        }).join('');
+
+    } catch(e) {
+      content.innerHTML = `<div style="color:var(--red)">Erro na análise: ${e.message}</div>`;
+    }
+  }
+
+  function showTab(name, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-reviews').style.display = name === 'reviews' ? 'block' : 'none';
+    document.getElementById('tab-notes').style.display = name === 'notes' ? 'block' : 'none';
+  }
+</script>
+</body>
+</html>
